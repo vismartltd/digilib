@@ -30,6 +30,8 @@ import javax.servlet.http.HttpServlet;
 import org.apache.log4j.Logger;
 import org.apache.log4j.xml.DOMConfigurator;
 
+import EDU.oswego.cs.dl.util.concurrent.FIFOSemaphore;
+import EDU.oswego.cs.dl.util.concurrent.Semaphore;
 import digilib.auth.AuthOps;
 import digilib.auth.XMLAuthOps;
 import digilib.io.AliasingDocuDirCache;
@@ -47,7 +49,7 @@ public class Initialiser extends HttpServlet {
 	private static final long serialVersionUID = -5126621114382549343L;
 
 	/** servlet version */
-	public static final String iniVersion = "0.1a1";
+	public static final String iniVersion = "0.1b1";
 
 	/** gengeral logger for this class */
 	private static Logger logger = Logger.getLogger("digilib.init");
@@ -63,10 +65,6 @@ public class Initialiser extends HttpServlet {
 
 	/** use authorization database */
 	boolean useAuthentication = false;
-
-	private DigilibManager fastQueue;
-
-	private DigilibManager slowQueue;
 
 	/**
 	 * Initialisation on first run.
@@ -135,15 +133,10 @@ public class Initialiser extends HttpServlet {
 						.getAsString("docuimage-class"));
 				dlConfig.setDocuImageClass(cl);
 				dlConfig.setValue("servlet.docuimage.class", cl.getName());
-				// DigilibManager work queue
-				int fl = dlConfig.getAsInt("worker-fast-lanes");
-				int fq = dlConfig.getAsInt("worker-fast-queue");
-				fastQueue = new DigilibManager(fl, fq);
-				dlConfig.setValue("servlet.fast.queue", fastQueue);
-				int sl = dlConfig.getAsInt("worker-slow-lanes");
-				int sq = dlConfig.getAsInt("worker-slow-queue");
-				slowQueue = new DigilibManager(sl, sq);
-				dlConfig.setValue("servlet.slow.queue", slowQueue);
+				// worker threads
+				int nt = dlConfig.getAsInt("worker-threads");
+				Semaphore lck = new FIFOSemaphore(nt); 
+				DigilibWorker.setLock(lck);
 				// set as the servlets main config
 				context.setAttribute("digilib.servlet.configuration", dlConfig);
 
@@ -162,11 +155,6 @@ public class Initialiser extends HttpServlet {
 			authOp = (AuthOps) dlConfig.getValue("servlet.auth.op");
 			// DocuDirCache instance
 			dirCache = (DocuDirCache) dlConfig.getValue("servlet.dir.cache");
-			// work queues
-			fastQueue = (DigilibManager) dlConfig
-					.getValue("servlet.fast.queue");
-			slowQueue = (DigilibManager) dlConfig
-					.getValue("servlet.slow.queue");
 		}
 	}
 

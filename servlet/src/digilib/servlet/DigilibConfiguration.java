@@ -91,9 +91,6 @@ public class DigilibConfiguration extends ParameterMap {
 			's');
 		// AuthOps instance for authentication
 		newParameter("servlet.auth.op", null, null, 's');
-		// worker queues
-		newParameter("servlet.fast.queue", null, null, 's');
-		newParameter("servlet.slow.queue", null, null, 's');
 
 		/*
 		 * parameters that can be read from config file have a type 'f'
@@ -144,14 +141,8 @@ public class DigilibConfiguration extends ParameterMap {
 		newParameter("max-image-size", new Integer(0), null, 'f');
 		// use safe (but slower) directory indexing
 		newParameter("safe-dir-index", Boolean.FALSE, null, 'f');
-		// number of fast worker threads
-		newParameter("worker-fast-lanes", new Integer(2), null, 'f');
-		// length of fast worker queue
-		newParameter("worker-fast-queue", new Integer(100), null, 'f');
-		// number of slow worker threads
-		newParameter("worker-slow-lanes", new Integer(2), null, 'f');
-		// length of slow worker queue
-		newParameter("worker-slow-queue", new Integer(100), null, 'f');
+		// number of working threads
+		newParameter("worker-threads", new Integer(1), null, 'f');
 
 	}
 

@@ -149,11 +149,11 @@ protected void processRequest(HttpServletRequest request,
 			 */
 			TextFile f = getTextFile(dlRequest, "/txt");
 			if (f != null) {
-				ServletOps.sendFileImmediately(f.getFile(), null, response);
+				ServletOps.sendFile(f.getFile(), null, response);
 			} else {
 				f = getTextFile(dlRequest, "");
 				if (f != null) {
-					ServletOps.sendFileImmediately(f.getFile(),	null, response);
+					ServletOps.sendFile(f.getFile(),	null, response);
 				} else {	
 					ServletOps.htmlMessage("No Text-File!", response);
 				}

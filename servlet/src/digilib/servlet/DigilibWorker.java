@@ -25,25 +25,24 @@ import org.apache.log4j.Logger;
 import EDU.oswego.cs.dl.util.concurrent.FIFOSemaphore;
 import EDU.oswego.cs.dl.util.concurrent.Semaphore;
 
-
-
-/** image operation worker.
+/**
+ * image operation worker.
  * 
  * @author casties
- *
+ *  
  */
-public abstract class DigilibWorker extends Thread {
-	
+public abstract class DigilibWorker {
+
 	protected static Logger logger = Logger.getLogger(DigilibWorker.class);
 
 	private static int runningThreads = 0;
-	
-	public static Semaphore lock = new FIFOSemaphore(4);
+
+	public static Semaphore lock = new FIFOSemaphore(1);
 
 	protected boolean busy = false;
-	
-	protected Exception error; 
-	
+
+	protected Exception error;
+
 	/**
 	 * @param job
 	 */
@@ -52,34 +51,39 @@ public abstract class DigilibWorker extends Thread {
 		busy = true;
 		error = null;
 	}
-	
-	
+
 	public abstract void work() throws Exception;
-	
-	/** Actually do the work.
-	 * 
-	 * @see java.lang.Runnable#run()
+
+	/**
+	 * Do the work.
 	 */
 	public void run() {
 		try {
 			lock.acquire();
-		logger.debug((++runningThreads)+" running threads");
+		} catch (InterruptedException e) {
+			error = e;
+			busy = false;
+			return;
+		}
+		logger.debug((++runningThreads) + " running threads");
 		try {
 			work();
 		} catch (Exception e) {
 			error = e;
 			logger.error(e);
 		}
-		synchronized (this) {
-			busy = false;
-			this.notify();
-		}
+		busy = false;
 		runningThreads--;
 		lock.release();
-		} catch (InterruptedException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
+	}
+
+	
+	/** Returns the name of this thread.
+	 * 
+	 * @return
+	 */
+	public String getName() {
+		return Thread.currentThread().getName();
 	}
 	
 	/**
@@ -89,19 +93,34 @@ public abstract class DigilibWorker extends Thread {
 		return busy;
 	}
 
-	/** returns if an error occurred.
+	/**
+	 * returns if an error occurred.
 	 * 
 	 * @return
 	 */
 	public boolean hasError() {
 		return (error != null);
 	}
-	
+
 	/**
 	 * @return Returns the error.
 	 */
 	public Exception getError() {
 		return error;
 	}
-	
+
+	/**
+	 * @return Returns the lock.
+	 */
+	public static Semaphore getLock() {
+		return lock;
+	}
+
+	/**
+	 * @param lock
+	 *            The lock to set.
+	 */
+	public static void setLock(Semaphore lock) {
+		DigilibWorker.lock = lock;
+	}
 }

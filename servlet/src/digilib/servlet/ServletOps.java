@@ -33,7 +33,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.log4j.Logger;
 
-import EDU.oswego.cs.dl.util.concurrent.Executor;
 import digilib.io.FileOpException;
 import digilib.io.FileOps;
 
@@ -141,7 +140,7 @@ public class ServletOps {
 	 * @throws FileOpException
 	 *             Exception is thrown for a IOException.
 	 */
-	public static void sendFileImmediately(File f, String mt,
+	public static void sendFile(File f, String mt,
 			HttpServletResponse response) throws FileOpException {
 		logger.debug("sendRawFile(" + mt + ", " + f + ")");
 		if (mt == null) {
@@ -171,47 +170,6 @@ public class ServletOps {
 		} catch (IOException e) {
 			throw new FileOpException("Unable to send file.");
 		}
-	}
-
-	/**
-	 * Transfers an image file as-is with the mime type mt using a work queue.
-	 * 
-	 * The local file is copied to the <code>OutputStream</code> of the
-	 * <code>ServletResponse</code>. If mt is null then the mime-type is
-	 * auto-detected with mimeForFile.
-	 * 
-	 * @param mt
-	 *            mime-type of the file.
-	 * @param f
-	 *            Image file to be sent.
-	 * @param res
-	 *            ServletResponse where the image file will be sent.
-	 * @throws FileOpException
-	 *             Exception is thrown for a IOException.
-	 */
-	public static void sendFile(File f, String mimetype,
-			HttpServletResponse response, Executor workQueue)
-			throws FileOpException {
-		// we're cheating
-		sendFileImmediately(f, mimetype, response);
-		/*
-		// create worker
-		DigilibSender job = new DigilibSender(f, null, response);
-		try {
-			logger.debug("queue size: "
-					+ ((DigilibManager) workQueue).getQueueSize());
-			workQueue.execute(job);
-			logger.debug("job sent!");
-			synchronized (job) {
-				while (job.isBusy()) {
-					job.wait();
-				}
-			}
-		} catch (InterruptedException e) {
-			throw new FileOpException("INTERRUPTED: Unable to send file. " + e);
-		}
-		*/
-
 	}
 
 }

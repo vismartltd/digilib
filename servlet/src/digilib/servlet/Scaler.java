@@ -59,7 +59,7 @@ public class Scaler extends HttpServlet {
 	private static final long serialVersionUID = -325080527268912852L;
 
 	/** digilib servlet version (for all components) */
-	public static final String dlVersion = "2.0a6";
+	public static final String dlVersion = "2.0b1";
 
 	/** logger for accounting requests */
 	private static Logger accountlog = Logger.getLogger("account.request");
@@ -103,12 +103,6 @@ public class Scaler extends HttpServlet {
 	/** DigilibConfiguration instance */
 	DigilibConfiguration dlConfig;
 
-	/** fast worker queue */
-	DigilibManager fastQueue;
-
-	/** slow image worker queue */
-	DigilibManager slowQueue;
-
 	/** use authorization database */
 	boolean useAuthorization = true;
 
@@ -147,9 +141,6 @@ public class Scaler extends HttpServlet {
 		// set our AuthOps
 		useAuthorization = dlConfig.getAsBoolean("use-authorization");
 		authOp = (AuthOps) dlConfig.getValue("servlet.auth.op");
-		// work queues
-		fastQueue = (DigilibManager) dlConfig.getValue("servlet.fast.queue");
-		slowQueue = (DigilibManager) dlConfig.getValue("servlet.slow.queue");
 
 		// DocuDirCache instance
 		dirCache = (DocuDirCache) dlConfig.getValue("servlet.dir.cache");
@@ -189,7 +180,7 @@ public class Scaler extends HttpServlet {
 	}
 
 	/** main request handler. */
-void processRequest(HttpServletRequest request, HttpServletResponse response)
+	void processRequest(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException {
 
 		if (dlConfig == null) {
@@ -401,7 +392,7 @@ void processRequest(HttpServletRequest request, HttpServletResponse response)
 					fileToLoad = fileset.getBiggest();
 				}
 			}
-			logger.info("Loading: " + fileToLoad.getFile());
+			logger.info("Planning to load: " + fileToLoad.getFile());
 
 			/*
 			 * send the image if its mo=(raw)file
@@ -414,8 +405,7 @@ void processRequest(HttpServletRequest request, HttpServletResponse response)
 						mt = "application/octet-stream";
 					}
 					logger.debug("Sending RAW File as is.");
-					ServletOps.sendFile(fileToLoad.getFile(), mt, response,
-							fastQueue);
+					ServletOps.sendFile(fileToLoad.getFile(), mt, response);
 					logger.info("Done in "
 							+ (System.currentTimeMillis() - startTime) + "ms");
 					return;
@@ -472,8 +462,7 @@ void processRequest(HttpServletRequest request, HttpServletResponse response)
 
 				logger.debug("Sending File as is.");
 
-				ServletOps.sendFile(fileToLoad.getFile(), null, response,
-						fastQueue);
+				ServletOps.sendFile(fileToLoad.getFile(), null, response);
 
 				logger.info("Done in "
 						+ (System.currentTimeMillis() - startTime) + "ms");
@@ -581,8 +570,10 @@ void processRequest(HttpServletRequest request, HttpServletResponse response)
 			outerUserImgArea = outerUserImgArea.createIntersection(imgBounds);
 
 			// check image parameters sanity
-			if ((outerUserImgArea.getWidth() < 1) || (outerUserImgArea.getHeight() < 1)
-					|| (scaleXY * outerUserImgArea.getWidth() < 2) || (scaleXY * outerUserImgArea.getHeight() < 2)) {
+			if ((outerUserImgArea.getWidth() < 1)
+					|| (outerUserImgArea.getHeight() < 1)
+					|| (scaleXY * outerUserImgArea.getWidth() < 2)
+					|| (scaleXY * outerUserImgArea.getHeight() < 2)) {
 				logger.error("ERROR: invalid scale parameter set!");
 				throw new ImageOpException("Invalid scale parameter set!");
 			}
@@ -593,34 +584,14 @@ void processRequest(HttpServletRequest request, HttpServletResponse response)
 
 			DigilibWorker job = new DigilibImageWorker(dlConfig, response,
 					mimeType, scaleQual, dlRequest, paramROT, paramCONT,
-					paramBRGT, paramRGBM, paramRGBA, fileToLoad, scaleXY, outerUserImgArea,
-					innerUserImgArea, minSubsample, wholeRotArea);
-			
-			try {
-				// we're cheating
-				job.run();
-			} catch (Exception e1) {
-				throw new ImageOpException(e1.toString());
-			}
-			
-			/*
-			try {
-				slowQueue.execute(job);
-				logger.debug("servlet job submitted by "
-						+ Thread.currentThread().getName() + " ("
-						+ slowQueue.getQueueSize() + " in queue)");
-				
-				synchronized (job) {
-					while (job.isBusy()) {
-						Thread.yield();
-						job.wait();
-					}
-				}
-			} catch (InterruptedException e1) {
-				throw new ImageOpException("INTERRUPTED: " + e1.getMessage());
-			}
-			*/
+					paramBRGT, paramRGBM, paramRGBA, fileToLoad, scaleXY,
+					outerUserImgArea, innerUserImgArea, minSubsample,
+					wholeRotArea);
 
+			job.run();
+			if (job.hasError()) {
+				throw new ImageOpException(job.getError().toString());
+			}
 
 			logger.debug("servlet done in "
 					+ (System.currentTimeMillis() - startTime));
@@ -647,6 +618,7 @@ void processRequest(HttpServletRequest request, HttpServletResponse response)
 					"ERROR: Other Image Operation Error: " + e, response);
 		}
 	}
+
 	/**
 	 * Sends an error to the client as text or image.
 	 * 
@@ -673,7 +645,7 @@ void processRequest(HttpServletRequest request, HttpServletResponse response)
 			if (asHTML && (img != null)) {
 				ServletOps.htmlMessage(msg, response);
 			} else {
-				ServletOps.sendFile(img, null, response, fastQueue);
+				ServletOps.sendFile(img, null, response);
 			}
 		} catch (IOException e) {
 			logger.error("Error sending error!", e);
