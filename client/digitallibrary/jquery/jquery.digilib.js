@@ -1,7 +1,28 @@
-/*
+/* Copyright (c) 2011 Martin Raspe, Robert Casties
+ 
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ 
+Authors:
+  Martin Raspe, Robert Casties, 11.1.2011
+*/
+
+/**
  * digilib jQuery plugin
- *
+ * 
  */
+
+/*jslint browser: true, debug: true, forin: true */
 
 // fallback for console.log calls
 if (typeof(console) === 'undefined') {
@@ -11,7 +32,7 @@ if (typeof(console) === 'undefined') {
         error : function(){}
         };
     var customConsole = true;
-};
+}
 
 (function($) {
     var buttons = {
@@ -265,7 +286,7 @@ if (typeof(console) === 'undefined') {
                         params = queryParams;
                     } else {
                         params = parseImgParams($elem);
-                    };
+                    }
                     // store $(this) element in the settings
                     elemSettings = $.extend({}, settings, params);
                     data = {
@@ -282,11 +303,11 @@ if (typeof(console) === 'undefined') {
                 // add buttons
                 for (var i = 0; i < elemSettings.visibleButtonSets; ++i) {
                     showButtons(data, true, i);
-                    };
+                    }
                 // bird's eye view creation
                 if (elemSettings.isBirdDivVisible) {
                     setupBirdDiv(data);
-                    };
+                    }
                 // about window creation - TODO: could be deferred? restrict to only one item?
                 setupAboutDiv(data);
                 // TODO: the actual moving code
@@ -475,15 +496,15 @@ if (typeof(console) === 'undefined') {
             for (var i = 0; i < paramNames.length; i++) {
                 var paramName = paramNames[i];
                 delete settings[paramName];
-                };
+                }
             // fullscreen: restore only fn/pn parameters 
             if (settings.interactionMode === 'fullscreen') {
-                settings['fn'] = params.fn || ''; // no default defined
-                settings['pn'] = params.pn || defaults.pn;
+                settings.fn = params.fn || ''; // no default defined
+                settings.pn = params.pn || defaults.pn;
             // embedded: restore original parameters 
             } else {
                 $.extend(settings, params);
-                };
+                }
             // TODO: should we really reset all user preferences here?
             settings.isBirdDivVisible = false;
             settings.visibleButtonSets = 1;
@@ -500,7 +521,7 @@ if (typeof(console) === 'undefined') {
                 url = getDigilibUrl(data);
             } else {
                 url = getScalerUrl(data);
-                };
+                }
             if (noprompt == null) {
                 window.prompt("URL reference to the current view", url);
             }
@@ -579,7 +600,7 @@ if (typeof(console) === 'undefined') {
         var settings = data.settings;
         if (settings.scalerBaseUrl == null) {
             alert("ERROR: URL of digilib Scaler servlet missing!");
-            };
+            }
         packParams(data);
         var keys = settings.scalerParamNames;
         var queryString = getParamString(settings, keys, defaults);
@@ -613,14 +634,14 @@ if (typeof(console) === 'undefined') {
                 var pa = mk.split(";");    // old format with ";"
             } else {
                 var pa = mk.split(",");    // new format
-            };
+            }
             for (var i = 0; i < pa.length ; i++) {
                 var pos = pa[i].split("/");
                 if (pos.length > 1) {
                     marks.push(geom.position(pos[0], pos[1]));
-                    };
-                };
-            };
+                    }
+                }
+            }
         data.marks = marks;
         // mo (Scaler flags)
         var flags = {};
@@ -628,8 +649,8 @@ if (typeof(console) === 'undefined') {
             var pa = settings.mo.split(",");
             for (var i = 0; i < pa.length ; i++) {
                 flags[pa[i]] = pa[i];
-                };
-            };
+                }
+            }
         data.scalerFlags = flags;
         retrieveOptionsCookie(data);
     };
@@ -643,19 +664,18 @@ if (typeof(console) === 'undefined') {
             settings.wy = cropFloat(data.zoomArea.y);
             settings.ww = cropFloat(data.zoomArea.width);
             settings.wh = cropFloat(data.zoomArea.height);
-            };
+            }
         // marks
         if (data.marks) {
             settings.mk = '';
             for (var i = 0; i < data.marks.length; i++) {
                 if (i) {
                     settings.mk += ',';
-                    };
-                settings.mk
-                    += cropFloat(data.marks[i].x).toString() + '/' 
-                    + cropFloat(data.marks[i].y).toString();
-                };
-            };
+                    }
+                settings.mk += cropFloat(data.marks[i].x).toString() +
+                    '/' + cropFloat(data.marks[i].y).toString();
+                }
+            }
         // Scaler flags
         if (data.scalerFlags) {
             var mo = '';
@@ -694,15 +714,15 @@ if (typeof(console) === 'undefined') {
             for (var o in data.dlOpts) {
                 if (clop) {
                     clop += '&';
-                    };
+                    }
                 clop += o + '=' + data.dlOpts[o];
-                };
+                }
             if (jQuery.cookie) {
                 var ck = "digilib:fn:" + escape(settings.fn) + ":pn:" + settings.pn;
                 console.debug("set cookie=", ck, " value=", clop);
                 jQuery.cookie(ck, clop);
-                };
-        };
+                }
+        }
     };
 
     var retrieveOptionsCookie = function (data) {
@@ -723,20 +743,21 @@ if (typeof(console) === 'undefined') {
             console.debug("get cookie=", ck, " value=", cp);
             // in query string format
             opts = parseQueryString(cp);
-            };
+            }
         data.dlOpts = opts;
         // birdview option
         if (opts.birdview != null) {
             settings.isBirdDivVisible = opts.birdview === '1';
-            };
+            }
         // visible button sets
         if (opts.buttons != null) {
             settings.visibleButtonSets = opts.buttons;
-            };
+            }
     };
 
     // clear digilib data for reset
     var resetData = function (data) {
+        // TODO: we should reset instead of delete
         if (data.zoomArea) delete data.zoomArea;
         if (data.marks) delete data.marks;
         if (data.scalerFlags) delete data.scalerFlags;
@@ -751,13 +772,13 @@ if (typeof(console) === 'undefined') {
             var history = window.history;
             if (typeof(history.pushState) === 'function') {
                 console.debug("we could modify history, but we don't...");
-                };
+                }
             window.location = url;
         } else {
             // embedded mode -- just change img src
             var url = getScalerUrl(data);
             data.$img.attr('src', url);
-            };
+            }
     };
 
     // returns maximum size for scaler img in fullscreen mode
@@ -778,12 +799,12 @@ if (typeof(console) === 'undefined') {
         if (settings.interactionMode === 'fullscreen') {
             var imgSize = getFullscreenImgSize($elem);
             // fitwidth/height omits destination height/width
-            if (data.dlOpts['fitheight'] !== '1') {
+            if (data.dlOpts.fitheight !== '1') {
                 settings.dw = imgSize.width;
-            };
-            if (data.dlOpts['fitwidth'] !== '1') {
+            }
+            if (data.dlOpts.fitwidth !== '1') {
                 settings.dh = imgSize.height;
-            };
+            }
             $img = $('<img/>');
             scalerUrl = getScalerUrl(data);
         // embedded mode -- try to keep img tag
@@ -796,7 +817,7 @@ if (typeof(console) === 'undefined') {
             } else {
                 $img = $('<img/>');
                 scalerUrl = getScalerUrl(data);
-            };
+            }
         }
         // create new html
         $elem.empty(); // TODO: should we keep stuff for customization?
@@ -905,7 +926,7 @@ if (typeof(console) === 'undefined') {
         $birdImg.attr('src', birdUrl);
         if (data.settings.isBirdDivVisible) {
             $birdDiv.show();
-            };
+            }
         birdZoom(data);
     };
 
@@ -942,12 +963,12 @@ if (typeof(console) === 'undefined') {
         } else {
             // set visibility
             isVisible = show;
-            };
+            }
         if (isVisible) {
             $div.fadeIn();
         } else {
             $div.fadeOut();
-            };
+            }
         return isVisible;
     };
 
@@ -963,7 +984,7 @@ if (typeof(console) === 'undefined') {
                 $set = data.$buttonSets[setIdx];
             } else {
                 $set = createButtons(data, setIdx);
-                };
+                }
             if ($set == null) return false;
             var btnWidth = $set.width();
             // move remaining sets left and show new set
@@ -1002,18 +1023,18 @@ if (typeof(console) === 'undefined') {
             if (hmir) {
                 // mirror about center
                 trafo.concat(trafo.getMirror('y'));
-                };
+                }
             if (vmir) {
                 // mirror about center
                 trafo.concat(trafo.getMirror('x'));
-                };
+                }
             if (rot) {
                 // rotate around center
                 trafo.concat(trafo.getRotation(parseFloat(rot)));
-                };
+                }
             // move back
             trafo.concat(trafo.getTranslation(geom.position(0.5, 0.5)));
-            };
+            }
         // scale to screen position and size
         trafo.concat(trafo.getScale(picrect));
         trafo.concat(trafo.getTranslation(picrect));
@@ -1036,7 +1057,7 @@ if (typeof(console) === 'undefined') {
             // should the birdview adapt to mirror or rotation? decision: No. :-) 
             if ($birdImg) {
                 $birdImg.triggerHandler('load');
-                };
+                }
         };
     };
 
@@ -1067,8 +1088,8 @@ if (typeof(console) === 'undefined') {
                 var $mark = $(html);
                 $elem.append($mark);
                 $mark.offset({left : mpos.x, top : mpos.y});
-                };
-            };
+                }
+            }
     };
 
     // show zoom area indicator on bird's eye view
@@ -1091,7 +1112,7 @@ if (typeof(console) === 'undefined') {
             $birdZoom.offset(coords);
             $birdZoom.show();
             return;
-            };
+            }
         // nice animation for embedded mode :-)
         var makeCompleteFunction = function($birdZoom, normalSize) {
             return function() { 
@@ -1209,8 +1230,7 @@ if (typeof(console) === 'undefined') {
                 birdZoomRect.x + dx,
                 birdZoomRect.y + dy,
                 birdZoomRect.width,
-                birdZoomRect.height
-                );
+                birdZoomRect.height);
             // stay within birdimage
             newRect.stayInside(birdImgRect);
             $birdZoom.offset({left : newRect.x, top : newRect.y});
@@ -1228,14 +1248,14 @@ if (typeof(console) === 'undefined') {
             if (newRect == null) { // no movement happened
                 startPos = birdZoomRect.getCenter();
                 birdZoomMove(evt); // set center to click position
-                };
+                }
             if (data.zoomArea) {
                 // should always be true
                 var x = cropFloat((newRect.x - birdImgRect.x + 2) / birdImgRect.width);
                 var y = cropFloat((newRect.y - birdImgRect.y + 2) / birdImgRect.height);
                 data.zoomArea.x = x;
                 data.zoomArea.y = y;
-                };
+                }
             settings.ws = 1; // zoomed is always fit
             redisplay(data);
             return false;
@@ -1269,13 +1289,12 @@ if (typeof(console) === 'undefined') {
         if ($bg.length === 0) {
             $bg = $('<div class="bgDrag" style="display:none; position:absolute"/>');
             $scaler.before($bg); // set as background
-            };
+            }
 
         var dragStart = function (evt) {
         // drag the image and load a new detail on mouse up
             // useless if not zoomed
             if (isFullArea(data.zoomArea)) return false;
-            if(evt.preventDefault) evt.preventDefault(); // no Firefox drag and drop (NEEDED?)
             pt1 = geom.position(evt);
             $imgRect = geom.rectangle($img);
             $imgRect.adjustDiv($bg); // set background size
@@ -1290,13 +1309,12 @@ if (typeof(console) === 'undefined') {
             $bg.show();
             $(document).bind("mousemove.digilib", dragMove);
             $(document).bind("mouseup.digilib", dragEnd);
-            window.focus();
+            return false;
             };
 
         var dragMove = function (evt) {
         // mousemove handler: drag
             var pos = geom.position(evt);
-            if(evt.preventDefault) evt.preventDefault(); // no Firefox drag and drop (NEEDED?)
             dx = pos.x - pt1.x;
             dy = pos.y - pt1.y;
             // move the background image to the new position
@@ -1314,7 +1332,7 @@ if (typeof(console) === 'undefined') {
             $(document).unbind("mousemove.digilib", dragMove);
             $(document).unbind("mouseup.digilib", dragEnd);
             // calculate relative offset
-            if (dx == 0 && dy == 0) return false; // no movement
+            if (dx === 0 && dy === 0) return false; // no movement
             // reload with scaler image showing the new ausschnitt
             // digilib.moveBy(x, y);
             var pos = geom.position(-dx, -dy);
@@ -1342,23 +1360,26 @@ if (typeof(console) === 'undefined') {
         // clear flags
         for (var i = 0; i < 3; ++i) {
             delete flags['q'+i];
-            };
+            }
         flags['q'+qual] = 'q'+qual;
     };
 
     // sets a key to a value (relative values with +/- if relative=true)
     var setNumValue = function(settings, key, value) {
-        if (isNumber(value)) return settings[key] = value; 
-        var sign = value.substring(0,1);
+        if (isNumber(value)) {
+            settings[key] = value;
+            return value;
+        }
+        var sign = value[0];
         if (sign === '+' || sign === '-') {
             if (settings[key] == null) {
                 // this isn't perfect but still...
                 settings[key] = 0;
-                };
+                }
             settings[key] = parseFloat(settings[key]) + parseFloat(value);
         } else {
             settings[key] = value;
-            };
+            }
         return settings[key];
     };
 
@@ -1394,7 +1415,7 @@ if (typeof(console) === 'undefined') {
         console.log = logFunction('_log'); 
         console.debug = logFunction('_debug'); 
         console.error = logFunction('_error');
-        };
+        }
 
     // hook plugin into jquery
     $.fn.digilib = function(action) {
@@ -1409,8 +1430,8 @@ if (typeof(console) === 'undefined') {
             // call init on this
             return actions.init.apply(this, arguments);
         } else {
-            $.error( 'action ' + action + ' does not exist on jQuery.digilib' );
-            };
+            $.error('action ' + action + ' does not exist on jQuery.digilib');
+        }
     };
 
 })(jQuery);
