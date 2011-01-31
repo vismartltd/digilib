@@ -309,6 +309,7 @@ if (typeof(console) === 'undefined') {
                 // bird's eye view creation
                 if (elemSettings.isBirdDivVisible) {
                     setupBirdDiv(data);
+                    data.$birdDiv.show();
                     }
                 // about window creation - TODO: could be deferred? restrict to only one item?
                 setupAboutDiv(data);
@@ -339,7 +340,8 @@ if (typeof(console) === 'undefined') {
                 setupBirdDiv(data);
             }
             data.settings.isBirdDivVisible = showDiv(data.settings.isBirdDivVisible, data.$birdDiv, show);
-            data.$birdImg.triggerHandler('load');
+            storeOptions(data);
+            // data.$birdImg.triggerHandler('load'); // TODO: we shouldn't do that
         },
 
         // goto given page nr (+/-: relative)
@@ -489,6 +491,8 @@ if (typeof(console) === 'undefined') {
                     settings.visibleButtonSets++;
                 }
             }
+            // persist setting
+            storeOptions(data);
         },
 
         // reset image parameters to defaults
@@ -658,7 +662,7 @@ if (typeof(console) === 'undefined') {
                 }
             }
         data.scalerFlags = flags;
-        retrieveOptionsCookie(data);
+        retrieveOptions(data);
     };
 
     // put objects back into parameters
@@ -694,10 +698,10 @@ if (typeof(console) === 'undefined') {
             settings.mo = mo;
         }
         // user interface options
-        storeOptionsCookie(data);
+        storeOptions(data);
     };
 
-    var storeOptionsCookie = function (data) {
+    var storeOptions = function (data) {
         // save digilib options in cookie
         // TODO: in embedded mode this is not called
         /* store in parameter clop
@@ -731,7 +735,7 @@ if (typeof(console) === 'undefined') {
         }
     };
 
-    var retrieveOptionsCookie = function (data) {
+    var retrieveOptions = function (data) {
         // clop (digilib options)
         var opts = {};
         var settings = data.settings;
@@ -785,7 +789,7 @@ if (typeof(console) === 'undefined') {
             var url = getScalerUrl(data);
             data.$img.attr('src', url);
             // load new bird img (in case the scalerUrl has changed, like in gotopage)
-            showBirdImage(data);
+            //showBirdDiv(data); //TODO: change url explicitly
             }
     };
 
@@ -907,6 +911,20 @@ if (typeof(console) === 'undefined') {
         return $buttonsDiv;
     };
 
+    // returns URL for bird's eye view image
+    var getBirdImgUrl = function (data) {
+        var settings = data.settings;
+        var birdDivOptions = {
+                dw : settings.birdDivWidth,
+                dh : settings.birdDivHeight
+        };
+        var birdSettings = $.extend({}, settings, birdDivOptions);
+        // use only the relevant parameters
+        var birdUrl = settings.scalerBaseUrl + '?' +
+            getParamString(birdSettings, settings.birdDivParams);
+        return birdUrl;
+    };
+    
     // creates HTML structure for the bird's eye view in elem
     var setupBirdDiv = function (data) {
         var $elem = data.$elem;
@@ -916,40 +934,33 @@ if (typeof(console) === 'undefined') {
         var $birdZoom = $('<div class="birdZoom" style="display:none; position:absolute; background-color:transparent;"/>');
         // the small image
         var $birdImg = $('<img class="birdimg"/>');
+        data.$birdDiv = $birdDiv;
+        data.$birdZoom = $birdZoom;
+        data.$birdImg = $birdImg;
         $elem.append($birdDiv);
         $birdDiv.append($birdZoom);
         $birdDiv.append($birdImg);
         $birdZoom.css(data.settings.birdIndicatorStyle);
-        data.$birdDiv = $birdDiv;
-        data.$birdZoom = $birdZoom;
-        data.$birdImg = $birdImg;
+        var birdUrl = getBirdImgUrl(data);
         $birdImg.load(birdImgLoadedHandler(data));
-        showBirdImage(data);
-        birdZoom(data);
-    };
-    
-    // puts correct img into bird div
-    var showBirdImage = function (data) {
-        var $birdDiv = data.$birdDiv;
-        if ($birdDiv == null) return null;
-        var settings = data.settings;
-        var $birdImg = data.$birdImg;
-        var birdDivOptions = {
-            dw : settings.birdDivWidth,
-            dh : settings.birdDivHeight
-            };
-        var birdSettings = $.extend({}, settings, birdDivOptions);
-        // use only the relevant parameters
-        var birdUrl = settings.scalerBaseUrl + '?' 
-            + getParamString(birdSettings, settings.birdDivParams);
-        // the bird's eye div
         $birdImg.attr('src', birdUrl);
-        if (settings.isBirdDivVisible) {
-            $birdDiv.show();
-            }
+    };
+
+    // update bird's eye view
+    var updateBirdDiv = function (data) {
+        if (!data.settings.isBirdDivVisible) return;
+        var $birdImg = data.$birdImg;
+        var oldsrc = $birdImg.attr('src');
+        var newsrc = getBirdImgUrl(data);
+        if (oldsrc !== newsrc) {
+            $birdImg.attr('src', newsrc);
+            // onload handler re-renders
+        } else {
+            // re-render
+            renderBirdArea(data);
+        }
     };
     
-
     // creates HTML structure for the about view in elem
     var setupAboutDiv = function (data) {
         var $elem = data.$elem;
@@ -1063,8 +1074,8 @@ if (typeof(console) === 'undefined') {
 
     // returns function for load event of scaler img
     var scalerImgLoadedHandler = function (data) {
-        var $img = data.$img;
         return function () {
+            var $img = $(this);
             console.debug("img loaded! this=", this, " data=", data);
             // create Transform from current area and picsize
             data.imgTrafo = getImgTrafo($img, data.zoomArea,
@@ -1079,23 +1090,20 @@ if (typeof(console) === 'undefined') {
             // display marks
             renderMarks(data);
             // TODO: digilib.showArrows(); // show arrow overlays for zoom navigation
-            var $birdImg = data.$birdImg;
-            // should the birdview adapt to mirror or rotation? decision: No. :-) 
-            if ($birdImg) {
-                $birdImg.triggerHandler('load');
-                }
         };
     };
 
     // returns function for load event of bird's eye view img
     var birdImgLoadedHandler = function (data) {
-        var $img = data.$birdImg;
         return function () {
+            var $img = $(this);
             console.debug("birdimg loaded! this=", this, " data=", data);
             // create Transform from current area and picsize
             data.birdTrafo = getImgTrafo($img, MAX_ZOOMAREA);
             // display red indicator around zoomarea
-            renderbirdZoom(data);
+            renderBirdArea(data);
+            // enable click and drag
+            birdMoveArea(data);
         };
     };
 
@@ -1119,9 +1127,16 @@ if (typeof(console) === 'undefined') {
     };
 
     // show zoom area indicator on bird's eye view
-    var renderbirdZoom = function (data) {
+    var renderBirdArea = function (data) {
         var $birdZoom = data.$birdZoom;
         var zoomArea = data.zoomArea;
+        var normalSize = isFullArea(zoomArea);
+        if (normalSize) {
+            $birdZoom.hide();
+            return;
+        } else {
+            $birdZoom.show();
+        }
         var indRect = data.birdTrafo.transform(zoomArea);
         var coords = {
             left : indRect.x-2, // acount for frame width
@@ -1129,27 +1144,15 @@ if (typeof(console) === 'undefined') {
             width : indRect.width,
             height: indRect.height
             };
-        var normalSize = isFullArea(zoomArea);
         if (data.settings.interactionMode === 'fullscreen') {
             // no animation for fullscreen
-            if (normalSize) return $birdZoom.hide(); 
             $birdZoom.width(coords.width);
             $birdZoom.height(coords.height);
             $birdZoom.offset(coords);
-            $birdZoom.show();
-            return;
-            }
-        // nice animation for embedded mode :-)
-        var makeCompleteFunction = function($birdZoom, normalSize) {
-            return function() { 
-                if (normalSize) $birdZoom.hide(); 
-                };
-            };
-        var opts = {
-            'complete' : makeCompleteFunction($birdZoom, normalSize)
-            };
-        if (!normalSize && $birdZoom.css('display') === 'none') $birdZoom.show();
-        $birdZoom.animate(coords, opts);
+        } else {
+            // nice animation for embedded mode :-)
+            $birdZoom.animate(coords, opts);
+        }
     };
 
     // zooms by the given factor
@@ -1241,7 +1244,8 @@ if (typeof(console) === 'undefined') {
         $scaler.one('mousedown.digilib', zoomStart);
     };
 
-    var birdZoom = function(data) {
+    // bird's eye view zoom area click and drag handler
+    var birdMoveArea = function(data) {
         var $birdImg = data.$birdImg;
         var $birdZoom = data.$birdZoom;
         var startPos, newRect, birdImgRect, birdZoomRect;
