@@ -35,10 +35,10 @@ import org.apache.log4j.Logger;
 import digilib.image.DocuImage;
 import digilib.image.DocuImageImpl;
 import digilib.io.FileOps;
-import digilib.io.ImageFile;
-import digilib.io.XMLListLoader;
+import digilib.io.ImageInput;
 import digilib.util.Parameter;
 import digilib.util.ParameterMap;
+import digilib.util.XMLListLoader;
 
 /**
  * Class to hold the digilib servlet configuration parameters. The parameters
@@ -277,7 +277,7 @@ public class DigilibConfiguration extends ParameterMap {
 	 * @return
 	 * @throws IOException
 	 */
-	public static ImageFile docuImageIdentify(ImageFile imgf) throws IOException {
+	public static ImageInput identifyDocuImage(ImageInput imgf) throws IOException {
 	    // use fresh DocuImage instance
 	    DocuImage di = getDocuImageInstance();
 		return di.identify(imgf);

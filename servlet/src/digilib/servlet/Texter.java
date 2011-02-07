@@ -30,7 +30,6 @@ import org.apache.log4j.Logger;
 import digilib.auth.AuthOps;
 import digilib.image.ImageOpException;
 import digilib.io.DocuDirCache;
-import digilib.io.FileOpException;
 import digilib.io.FileOps;
 import digilib.io.FileOps.FileClass;
 import digilib.io.TextFile;
@@ -128,33 +127,33 @@ public class Texter extends HttpServlet {
 		processRequest(request, response);
 	}
 
-    protected void processRequest(HttpServletRequest request,
-            HttpServletResponse response) throws ServletException, IOException {
-
-        /*
-         * request parameters
-         */
+	protected void processRequest(HttpServletRequest request,
+			HttpServletResponse response) throws ServletException, IOException {
+		
+		/*
+		 * request parameters
+		 */
         // create new request with defaults
         DigilibRequest dlRequest = new DigilibRequest(request);
-        try {
-            /*
-             * find the file to load/send
-             */
-            TextFile f = getTextFile(dlRequest, "/txt");
-            if (f != null) {
-                ServletOps.sendFile(f.getFile(), null, null, response, logger);
-            } else {
-                f = getTextFile(dlRequest, "");
-                if (f != null) {
-                    ServletOps.sendFile(f.getFile(), null, null, response, logger);
-                } else {
-                    response.sendError(HttpServletResponse.SC_NOT_FOUND,
-                            "Text-File not found!");
-                    // ServletOps.htmlMessage("No Text-File!", response);
-                }
-            }
-
-        } catch (ImageOpException e) {
+		try {
+			
+			/*
+			 * find the file to load/send
+			 */
+			TextFile f = getTextFile(dlRequest, "/txt");
+			if (f != null) {
+				ServletOps.sendFile(f.getFile(), null, null, response, logger);
+			} else {
+				f = getTextFile(dlRequest, "");
+				if (f != null) {
+					ServletOps.sendFile(f.getFile(),	null, null, response, logger);
+				} else {
+					response.sendError(HttpServletResponse.SC_NOT_FOUND, "Text-File not found!");
+					//ServletOps.htmlMessage("No Text-File!", response);
+				}
+			}
+			
+		} catch (ImageOpException e) {
             // most likely wrong file format...
             logger.error("ERROR sending text file: ", e);
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
