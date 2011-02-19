@@ -29,7 +29,6 @@ import java.awt.image.BufferedImage;
 import java.awt.image.ConvolveOp;
 import java.awt.image.Kernel;
 import java.awt.image.RescaleOp;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
@@ -49,12 +48,12 @@ import javax.servlet.ServletException;
 
 import digilib.io.FileOpException;
 import digilib.io.FileOps;
-import digilib.io.ImageFile;
-import digilib.io.ImageFileset;
+import digilib.io.ImageInput;
+import digilib.util.ImageSize;
 
 /** Implementation of DocuImage using the ImageLoader API of Java 1.4 and Java2D. */
 public class ImageLoaderDocuImage extends ImageInfoDocuImage {
-
+    
 	/** image object */
 	protected BufferedImage img;
 	
@@ -64,9 +63,14 @@ public class ImageLoaderDocuImage extends ImageInfoDocuImage {
 	/** ImageIO image reader */
 	protected ImageReader reader;
 
-	/** File that was read */
-	protected File imgFile;
-
+	protected static Kernel[] convolutionKernels = {
+	        null,
+	        new Kernel(1, 1, new float[] {1f}),
+            new Kernel(2, 2, new float[] {0.25f, 0.25f, 0.25f, 0.25f}),
+            new Kernel(3, 3, new float[] {1f/9f, 1f/9f, 1f/9f, 1f/9f, 1f/9f, 1f/9f, 1f/9f, 1f/9f, 1f/9f})
+	};
+	
+	
 	/* loadSubimage is supported. */
 	public boolean isSubimageSupported() {
 		return true;
@@ -118,44 +122,50 @@ public class ImageLoaderDocuImage extends ImageInfoDocuImage {
 		return Arrays.asList(formats).iterator();
 	}
 
-    /** Check image size and type and store in ImageFile f */
-    public ImageFile identify(ImageFile imageFile) throws IOException {
+    /* Check image size and type and store in ImageInput */
+    public ImageInput identify(ImageInput input) throws IOException {
         // try parent method first
-        ImageFile imf = super.identify(imageFile);
-        if (imf != null) {
-            return imf;
+        ImageInput ii = super.identify(input);
+        if (ii != null) {
+            return ii;
         }
-        // fileset to store the information
-        ImageFileset imgfs = imageFile.getParent();
-        File f = imageFile.getFile();
-        if (f == null) {
-            throw new IOException("File not found!");
-        }
-        logger.debug("identifying (ImageIO) " + f);
+        logger.debug("identifying (ImageIO) " + input);
         /*
          * try ImageReader
          */
-        if ((reader == null) || (imgFile != imageFile.getFile())) {
-            getReader(imageFile);
+        try {
+            reader = getReader(input);
+        } catch (FileOpException e) {
+            // maybe just our class doesn't know what to do
+            return null;
         }
+        // set size
         ImageSize d = new ImageSize(reader.getWidth(0), reader.getHeight(0));
-        imageFile.setSize(d);
-        // String t = reader.getFormatName();
-        String t = FileOps.mimeForFile(f);
-        imageFile.setMimetype(t);
-        // logger.debug("  format:"+t);
-        if (imgfs != null) {
-            imgfs.setAspect(d);
+        input.setSize(d);
+        // set mime type
+        if (input.getMimetype() == null) {
+            if (input.hasFile()) {
+                String t = FileOps.mimeForFile(input.getFile());
+                input.setMimetype(t);
+            } else {
+                // FIXME: is format name a mime type???
+                String t = reader.getFormatName();
+                input.setMimetype(t);
+            }
         }
-        return imageFile;
+        return input;
     }
     
     /* load image file */
-	public void loadImage(ImageFile f) throws FileOpException {
-		logger.debug("loadImage " + f.getFile());
+	public void loadImage(ImageInput ii) throws FileOpException {
+		logger.debug("loadImage: " + ii);
+		this.input = ii;
 		try {
-			img = ImageIO.read(f.getFile());
-            mimeType = f.getMimetype();
+		    if (ii.hasImageInputStream()) {
+                img = ImageIO.read(ii.getImageInputStream());
+		    } else if (ii.hasFile()) {
+		        img = ImageIO.read(ii.getFile());
+		    }
 		} catch (IOException e) {
 			throw new FileOpException("Error reading image.");
 		}
@@ -166,17 +176,32 @@ public class ImageLoaderDocuImage extends ImageInfoDocuImage {
 	 * 
 	 * @return
 	 */
-	public ImageReader getReader(ImageFile f) throws IOException {
-		logger.debug("preloadImage " + f.getFile());
-		if (reader != null) {
-			logger.debug("Reader was not null!");
-			// clean up old reader
+	public ImageReader getReader(ImageInput input) throws IOException {
+		logger.debug("get ImageReader for " + input);
+		if (this.reader != null) {
+			if (this.input == input) {
+				// it was the same input
+				logger.debug("reusing Reader");
+				return reader;
+			}
+			// clean up old reader (this shouldn't really happen)
+			logger.debug("cleaning Reader!");
 			dispose();
 		}
-		RandomAccessFile rf = new RandomAccessFile(f.getFile(), "r");
-		ImageInputStream istream = new FileImageInputStream(rf);
+		this.input = input;
+		ImageInputStream istream = null;
+		if (input.hasImageInputStream()) {
+			// stream input
+			istream = input.getImageInputStream();
+		} else if (input.hasFile()) {
+			// file only input
+			RandomAccessFile rf = new RandomAccessFile(input.getFile(), "r");
+			istream = new FileImageInputStream(rf);
+		} else {
+			throw new FileOpException("Unable to get data from ImageInput");
+		}
 		Iterator<ImageReader> readers;
-		String mt = f.getMimetype();
+		String mt = input.getMimetype();
 		if (mt == null) {
 			logger.debug("No mime-type. Trying automagic.");
 			readers = ImageIO.getImageReaders(istream);
@@ -185,7 +210,6 @@ public class ImageLoaderDocuImage extends ImageInfoDocuImage {
 			readers = ImageIO.getImageReadersByMIMEType(mt);
 		}
 		if (!readers.hasNext()) {
-		    rf.close();
 			throw new FileOpException("Can't find Reader to load File!");
 		}
 		reader = readers.next();
@@ -195,18 +219,15 @@ public class ImageLoaderDocuImage extends ImageInfoDocuImage {
 			logger.debug("ImageIO: next reader: " + readers.next().getClass());
 		} */
 		reader.setInput(istream);
-		imgFile = f.getFile();
 		return reader;
 	}
 
 	/* Load an image file into the Object. */
-	public void loadSubimage(ImageFile f, Rectangle region, int prescale)
+	public void loadSubimage(ImageInput ii, Rectangle region, int prescale)
 			throws FileOpException {
 		logger.debug("loadSubimage");
 		try {
-			if ((reader == null) || (imgFile != f.getFile())) {
-				getReader(f);
-			}
+			reader = getReader(ii);
 			// set up reader parameters
 			ImageReadParam readParam = reader.getDefaultReadParam();
 			readParam.setSourceRegion(region);
@@ -216,7 +237,6 @@ public class ImageLoaderDocuImage extends ImageInfoDocuImage {
 			// read image
 			logger.debug("loading..");
 			img = reader.read(0, readParam);
-			mimeType = f.getMimetype();
 			logger.debug("loaded");
 		} catch (IOException e) {
 			throw new FileOpException("Unable to load File!");
@@ -325,19 +345,23 @@ public class ImageLoaderDocuImage extends ImageInfoDocuImage {
 	}
 
 	public void blur(int radius) throws ImageOpException {
-		// DEBUG
 		logger.debug("blur: " + radius);
 		// minimum radius is 2
 		int klen = Math.max(radius, 2);
-		// FIXME: use constant kernels for most common sizes
-		int ksize = klen * klen;
-		// kernel is constant 1/k
-		float f = 1f / ksize;
-		float[] kern = new float[ksize];
-		for (int i = 0; i < ksize; i++) {
-			kern[i] = f;
+		Kernel blur = null;
+		if (klen < convolutionKernels.length) {
+            blur = convolutionKernels[klen];
+		} else {
+            // calculate our own kernel
+            int ksize = klen * klen;
+            // kernel is constant 1/k
+            float f = 1f / ksize;
+            float[] kern = new float[ksize];
+            for (int i = 0; i < ksize; ++i) {
+                kern[i] = f;
+            }
+            blur = new Kernel(klen, klen, kern);
 		}
-		Kernel blur = new Kernel(klen, klen, kern);
 		// blur with convolve operation
 		ConvolveOp blurOp = new ConvolveOp(blur, ConvolveOp.EDGE_NO_OP,
 				renderHint);
@@ -403,7 +427,7 @@ public class ImageLoaderDocuImage extends ImageInfoDocuImage {
 
 	/**
 	 * Ensures that the array f is in the right order to map the images RGB
-	 * components. (not shure what happens
+	 * components. (not sure what happens otherwise)
 	 */
 	public float[] rgbOrdered(float[] fa) {
 		/*

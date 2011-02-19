@@ -23,14 +23,16 @@ import digilib.image.ImageOpException;
 import digilib.image.ImageWorker;
 import digilib.io.DocuDirCache;
 import digilib.io.DocuDirectory;
-import digilib.io.ImageFile;
+import digilib.io.DocuDirent;
+import digilib.io.FileOps.FileClass;
+import digilib.io.ImageInput;
 import digilib.util.DigilibJobCenter;
 
 @SuppressWarnings("serial")
 public class Scaler extends HttpServlet {
 
     /** digilib servlet version (for all components) */
-    public static final String version = "1.8.4a";
+    public static final String version = "1.9.0a";
 
     /** servlet error codes */
     public static enum Error {UNKNOWN, AUTH, FILE, IMAGE};
@@ -202,7 +204,7 @@ public class Scaler extends HttpServlet {
         	/*
         	 *  check if we can fast-track without scaling
         	 */
-            ImageFile fileToLoad = jobTicket.getFileToLoad();
+            ImageInput fileToLoad = (ImageInput) jobTicket.getInput();
 
             // check permissions
             if (useAuthorization) {
