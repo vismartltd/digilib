@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>digilib</artifactId>
+    <groupId>digilib</groupId>
+    <version>2.1-SNAPSHOT</version>
+  </parent>
+  <artifactId>digilib-common</artifactId>
+  <name>digilib-common</name>
+  <description>The Digital Image Library - common library</description>
+  <url>http://digilib.berlios.de</url>
+  <packaging>jar</packaging>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <repositories>
+  	<!-- This provides the required versions of JAI-ImageIO -->
+    <repository>
+        <id>geotools.osgeo.org</id>
+        <name>Geotools repository</name>
+        <url>http://download.osgeo.org/webdav/geotools/</url>
+    </repository>
+  </repositories>
+  <dependencies>
+    <dependency>
+      <groupId>javax.media</groupId>
+      <artifactId>jai_imageio</artifactId>
+        <type>jar</type>
+      	<version>1.1</version>
+        <scope>compile</scope>
+    </dependency>
+  	<dependency>
+  		<groupId>org.devlib.schmidt</groupId>
+  		<artifactId>imageinfo</artifactId>
+        <version>1.9</version>
+  		<type>jar</type>
+  		<scope>compile</scope>
+  	</dependency>
+  	<dependency>
+  		<groupId>org.jdom</groupId>
+  		<artifactId>jdom</artifactId>
+  		<type>jar</type>
+  		<scope>compile</scope>
+  	</dependency>
+  	<dependency>
+  		<groupId>log4j</groupId>
+  		<artifactId>log4j</artifactId>
+  		<type>jar</type>
+  		<scope>compile</scope>
+  	</dependency>
+    <dependency>
+    	<groupId>javax.servlet</groupId>
+    	<artifactId>servlet-api</artifactId>
+    	<version>2.3</version>
+    	<type>jar</type>
+    	<scope>provided</scope>
+    </dependency>
+  </dependencies>
+</project>
