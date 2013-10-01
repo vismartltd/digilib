@@ -78,6 +78,7 @@ public class ImageJobDescription extends ParameterMap {
     String mimeType = null;
     Integer paramDW = null;
     Integer paramDH = null;
+    DocuDirCache dirCache = null;
 
     /**
      * create empty ImageJobDescription.
@@ -87,6 +88,7 @@ public class ImageJobDescription extends ParameterMap {
     public ImageJobDescription(DigilibConfiguration dlcfg) {
         super(30);
         dlConfig = dlcfg;
+        dirCache = (DocuDirCache) dlConfig.getValue("servlet.dir.cache");
     }
 
     /**
@@ -184,7 +186,7 @@ public class ImageJobDescription extends ParameterMap {
     }
 
     /**
-     * Returns the mime-type (of the input).
+     * Returns the mime-type of the input.
      * 
      * @return
      * @throws IOException
@@ -197,12 +199,46 @@ public class ImageJobDescription extends ParameterMap {
         return mimeType;
     }
 
+
     /**
+     * Return the mime-type of the output.
+     * 
+     * @return
+     */
+    public String getOutputMimeType() {
+        // forced destination image type
+        if (hasOption("jpg")) {
+            return "image/jpeg";
+        } else if (hasOption("png")) {
+            return "image/png";
+        }
+        // use input image type
+        try {
+            String mt = getMimeType();
+            if ((mt.equals("image/jpeg") || mt.equals("image/jp2") || mt.equals("image/fpx"))) {
+                return "image/jpeg";
+            } else {
+                return "image/png";
+            }
+        } catch (IOException e) {
+            logger.error("No input when trying to getOutputMimeType!");
+        }
+        return null;
+    }
+    
+    /**
+     * Set the current ImageInput.
+     * 
      * @param input
      *            the input to set
      */
     public void setInput(ImageInput input) {
         this.input = input;
+        // create and set ImageSet if needed
+        if (dirCache == null && imageSet == null) {
+            imageSet = new ImageSet();
+            imageSet.add(input);
+        }
     }
 
     /**
@@ -250,7 +286,6 @@ public class ImageJobDescription extends ParameterMap {
      */
     public DocuDirectory getFileDirectory() throws FileOpException {
         if (fileDir == null) {
-            DocuDirCache dirCache = (DocuDirCache) dlConfig.getValue("servlet.dir.cache");
             String fp = getFilePath();
             fileDir = dirCache.getDirectory(fp);
             if (fileDir == null) {
@@ -268,8 +303,9 @@ public class ImageJobDescription extends ParameterMap {
      */
     public ImageSet getImageSet() throws FileOpException {
         if (imageSet == null) {
-            DocuDirCache dirCache = (DocuDirCache) dlConfig.getValue("servlet.dir.cache");
-
+            if (dirCache == null) {
+                throw new FileOpException("No DirCache configured!");
+            }
             imageSet = (ImageSet) dirCache.getFile(getFilePath(), getAsInt("pn"), FileClass.IMAGE);
             if (imageSet == null) {
                 throw new FileOpException("File " + getFilePath() + "(" + getAsInt("pn") + ") not found.");
@@ -278,6 +314,16 @@ public class ImageJobDescription extends ParameterMap {
         return imageSet;
     }
 
+    /**
+     * Set the current ImageSet.
+     * 
+     * @param imageSet
+     */
+    public void setImageSet(ImageSet imageSet) {
+        this.imageSet = imageSet;
+    }
+    
+    
     /**
      * Returns the file path name from the request.
      * 
@@ -667,6 +713,8 @@ public class ImageJobDescription extends ParameterMap {
     }
 
     /**
+     * Set the current docuImage.
+     * 
      * @param docuImage
      *            the docuImage to set
      */

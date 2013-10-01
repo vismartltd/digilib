@@ -43,9 +43,12 @@ public class DigilibConfiguration extends ParameterMap {
 
     /** Log4J logger */
     protected static Logger logger = Logger.getLogger(DigilibConfiguration.class);
+    
+    private static boolean isLoggerConfigured = false;
 
+    /** digilib version */
     public static String getVersion() {
-        return "2.2.1";
+        return "2.2.2";
     }
     
     /**
@@ -87,8 +90,13 @@ public class DigilibConfiguration extends ParameterMap {
     @SuppressWarnings("unchecked")
     public void configure() {
         DigilibConfiguration config = this;
-        // we start log4j with a default logger config TODO: is this the right place?
-        BasicConfigurator.configure();
+        if (DigilibConfiguration.isLoggerConfigured) {
+            logger.debug("Logger already configured!");
+        } else {
+            // we start log4j with a default logger config
+            BasicConfigurator.configure();
+            DigilibConfiguration.isLoggerConfigured = true;
+        }
         /*
          * initialise static DocuImage class instance
          */
