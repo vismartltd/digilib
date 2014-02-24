@@ -1,0 +1,57 @@
+/* 
+ * CSS style file for jQuery digilib
+ *
+ * Martin Raspe, Robert Casties, 26.3.2012
+ */
+
+div#dl-measure-toolbar {
+    font-size: 90%;
+    display: none;
+	border: 2px solid aqua;
+	background-color: silver;
+    padding: 5px;
+    position: absolute;
+    z-index: 20;
+}
+
+div#dl-measure-toolbar input {
+    font-size: 100%;
+    width: 8em;
+}
+
+div#dl-measure-toolbar select {
+    font-size: 100%;
+    width: 12em;
+}
+
+span.dl-measure-label {
+    padding: 0px 5px;
+    }
+
+span.dl-measure-number {
+    color: lightgreen;
+    background-color: #606060;
+    padding: 2px;
+    }
+
+input#dl-measure-val2, select#dl-measure-shape, select#dl-measure-unit1, select#dl-measure-unit2 {
+    color: lightgreen;
+    background-color: #606060;
+    }
+
+select#dl-measure-shape:focus  {
+    color: black;
+    background-color: white;
+    }
+
+option:disabled {
+    color: black;
+}
+
+button.dl-drawing {
+    background-color: lightgreen;
+}
+
+option.dl-units {
+    margin-left: 10px;
+}
